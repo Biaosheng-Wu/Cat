@@ -1,5 +1,7 @@
 package org.example.catcarebusiness.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.example.catcarebusiness.config.JwtUtils;
 import org.example.catcarebusiness.entity.HealthReport;
 import org.example.catcarebusiness.service.HealthReportService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,17 +19,22 @@ public class HealthReportController {
     @Autowired
     private HealthReportService healthReportService;
 
-    /**
-     * 提交流浪猫健康异常上报
-     * 前端传入包含文字描述、类型以及刚刚生成的 OSS 图片网址的 JSON 数据
-     */
+    @Autowired
+    private JwtUtils jwtUtils;
+
+    private Long getCurrentUserId(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            return jwtUtils.getUserIdFromToken(header.substring(7));
+        }
+        return null;
+    }
+
+    /** 提交流浪猫健康异常上报 */
     @PostMapping("/submit")
-    public String submitReport(@RequestBody HealthReport report) {
-        // 1. 模拟当前上报人是 1 号测试用户（爸爸）
-        report.setReporterId(1L);
-        // 2. 设置默认的处理状态为 0（待处理）
+    public String submitReport(@RequestBody HealthReport report, HttpServletRequest request) {
+        report.setReporterId(getCurrentUserId(request));
         report.setStatus(0);
-        // 3. 设置当前系统时间为上报时间
         report.setReportTime(LocalDateTime.now());
 
         boolean saved = healthReportService.save(report);

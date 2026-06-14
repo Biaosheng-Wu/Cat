@@ -3,53 +3,64 @@
  * 所有接口统一收拢在此文件，方便管理和对接
  */
 
-// 后端服务地址（开发时通过 Vite proxy 转发，解决跨域；生产环境改为实际后端地址）
 const BASE_URL = ''
 
 /**
- * 通用请求函数
- * @param {string} url    - 接口路径（如 /api/cat/add）
- * @param {string} method - 请求方法 GET/POST/PUT/DELETE
- * @param {object} data   - 请求体（POST/PUT 时传入）
- * @returns {Promise}
+ * 从本地存储获取 Token
+ */
+function getToken() {
+  return uni.getStorageSync('token') || ''
+}
+
+/**
+ * 通用请求函数（自动附带 JWT Token）
  */
 function request(url, method = 'GET', data = null) {
   return new Promise((resolve, reject) => {
+    const header = { 'Content-Type': 'application/json' }
+    const token = getToken()
+    if (token) {
+      header['Authorization'] = 'Bearer ' + token
+    }
     uni.request({
       url: BASE_URL + url,
       method,
       data,
-      header: {
-        'Content-Type': 'application/json'
-      },
+      header,
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data)
+        } else if (res.statusCode === 401) {
+          // Token 过期或无效，清除登录状态
+          uni.removeStorageSync('token')
+          uni.removeStorageSync('userInfo')
+          uni.reLaunch({ url: '/pages/login/login' })
+          reject(res)
         } else {
           reject(res)
         }
       },
-      fail: (err) => {
-        reject(err)
-      }
+      fail: (err) => { reject(err) }
     })
   })
 }
 
-/**
- * 文件上传（Form-Data 格式）
- * @param {string} filePath - 本地文件临时路径
- * @returns {Promise<string>} 返回 OSS 图片 URL
- */
+/** 文件上传（Form-Data 格式） */
 export function uploadFile(filePath) {
   return new Promise((resolve, reject) => {
+    const header = {}
+    const token = getToken()
+    if (token) {
+      header['Authorization'] = 'Bearer ' + token
+    }
     uni.uploadFile({
       url: BASE_URL + '/api/file/upload',
       filePath,
       name: 'file',
+      header,
       success: (res) => {
         if (res.statusCode === 200) {
-          resolve(res.data)  // 直接就是 OSS 图片 URL 字符串
+          resolve(res.data)
         } else {
           uni.showToast({ title: '上传失败', icon: 'none' })
           reject(res)
@@ -63,6 +74,25 @@ export function uploadFile(filePath) {
   })
 }
 
+// ══════════════════ 认证接口 ══════════════════
+
+/** 获取图形验证码 */
+export function getCaptcha() {
+  return request('/api/auth/captcha', 'GET')
+}
+
+/** 登录 */
+export function login(username, password) {
+  return request('/api/auth/login', 'POST', { username, password })
+}
+
+/** 注册（需验证码） */
+export function register(username, password, captchaKey, captchaCode) {
+  return request('/api/auth/register', 'POST', {
+    username, password, captchaKey, captchaCode
+  })
+}
+
 // ══════════════════ 猫咪档案接口 ══════════════════
 
 /** 录入猫咪档案 */
@@ -70,12 +100,12 @@ export function addCat(catData) {
   return request('/api/cat/add', 'POST', catData)
 }
 
-/** 修改猫咪绝育/TNR 状态 */
+/** 修改猫咪绝育/TNR 状态（仅管理员） */
 export function updateTnrStatus(catId, tnrStatus) {
   return request(`/api/cat/tnr/${catId}?tnrStatus=${tnrStatus}`, 'PUT')
 }
 
-/** 删除猫咪档案 */
+/** 删除猫咪档案（仅管理员） */
 export function deleteCat(catId) {
   return request(`/api/cat/delete/${catId}`, 'DELETE')
 }
@@ -87,43 +117,35 @@ export function submitHealthReport(reportData) {
   return request('/api/report/submit', 'POST', reportData)
 }
 
-// ═══════════════ 以下接口等待后端补齐 ══════════════
-// 当前使用 uni.request 直接调用，后端开发后可立即生效
+// ══════════════════ 投喂打卡接口 ══════════════════
 
-/** 获取猫咪列表（等待后端 GET /api/cat/list） */
+/** 获取猫咪列表 */
 export function getCatList() {
   return request('/api/cat/list', 'GET')
 }
 
-/** 获取猫咪详情（等待后端 GET /api/cat/{id}） */
+/** 获取猫咪详情 */
 export function getCatDetail(catId) {
   return request(`/api/cat/${catId}`, 'GET')
 }
 
-/** 提交投喂打卡（等待后端 POST /api/feed/submit） */
+/** 提交投喂打卡 */
 export function submitFeed(feedData) {
   return request('/api/feed/submit', 'POST', feedData)
 }
 
-/** 获取某猫咪今日已投喂次数（等待后端 GET /api/feed/todayCount/{catId}） */
+/** 获取某猫咪今日已投喂次数 */
 export function getTodayFeedCount(catId) {
   return request(`/api/feed/todayCount/${catId}`, 'GET')
 }
 
-/** 获取当前用户个人投喂记录（等待后端 GET /api/feed/my） */
+/** 获取当前用户个人投喂记录 */
 export function getMyFeedList() {
   return request('/api/feed/my', 'GET')
 }
 
 export default {
-  addCat,
-  updateTnrStatus,
-  deleteCat,
-  submitHealthReport,
-  uploadFile,
-  getCatList,
-  getCatDetail,
-  submitFeed,
-  getTodayFeedCount,
-  getMyFeedList
+  getCaptcha, login, register, addCat, updateTnrStatus, deleteCat,
+  submitHealthReport, uploadFile, getCatList, getCatDetail,
+  submitFeed, getTodayFeedCount, getMyFeedList
 }

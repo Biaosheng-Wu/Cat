@@ -1,16 +1,23 @@
 <template>
   <view class="mine-wrap">
+    <!-- 未登录提示 -->
+    <view class="login-tip" v-if="!token" @click="goLogin">
+      <text class="login-text">点击登录，开始救助之旅</text>
+      <text class="arrow">></text>
+    </view>
+
     <!-- 1. 个人信息头部卡片 -->
-    <view class="user-card">
+    <view class="user-card" v-if="token">
       <image class="avatar" src="/static/avatar.png" mode="aspectFill"></image>
       <view class="user-info">
-        <text class="nickname">校园用户</text>
+        <text class="nickname">{{ userInfo.nickname || userInfo.username || '校园用户' }}</text>
         <text class="desc">流浪猫救助志愿者</text>
       </view>
+      <view class="logout-btn" @click="doLogout" hover-class="btn-hover">退出</view>
     </view>
 
     <!-- 2. 功能菜单列表 -->
-    <view class="menu-card">
+    <view class="menu-card" v-if="token">
       <view class="menu-item" @click="toggleRecord">
         <text class="menu-text">我的投喂记录</text>
         <text class="arrow">{{ showRecord ? '▲' : '▼' }}</text>
@@ -49,25 +56,40 @@ export default {
   name: "Mine",
   data() {
     return {
+      token: '',
+      userInfo: {},
       showRecord: false,
-      myFeedList: [],
-      // mock 兜底数据
-      mockFeedList: [
-        {
-          catName: "橘猫大胖",
-          feedTime: "2026-06-09 08:20",
-          location: "一食堂门口"
-        },
-        {
-          catName: "狸花阿狸",
-          feedTime: "2026-06-09 18:00",
-          location: "操场围栏旁"
-        }
-      ]
+      myFeedList: []
+    }
+  },
+  onShow() {
+    this.token = uni.getStorageSync('token') || ''
+    try {
+      this.userInfo = JSON.parse(uni.getStorageSync('userInfo') || '{}')
+    } catch (e) {
+      this.userInfo = {}
     }
   },
   methods: {
-    /** 展开/收起投喂记录，首次展开时从后端获取数据 */
+    goLogin() {
+      uni.navigateTo({ url: '/pages/login/login' })
+    },
+    doLogout() {
+      uni.showModal({
+        title: '提示',
+        content: '确定要退出登录吗？',
+        success: (res) => {
+          if (res.confirm) {
+            uni.removeStorageSync('token')
+            uni.removeStorageSync('userInfo')
+            this.token = ''
+            this.userInfo = {}
+            this.showRecord = false
+            this.myFeedList = []
+          }
+        }
+      })
+    },
     async toggleRecord() {
       this.showRecord = !this.showRecord
       if (this.showRecord && this.myFeedList.length === 0) {
@@ -79,15 +101,12 @@ export default {
             return
           }
         } catch (e) {
-          console.log('后端未响应，使用兜底数据', e)
+          console.log('获取投喂记录失败', e)
         }
-        this.myFeedList = this.mockFeedList
       }
     },
     goAbout() {
-      uni.navigateTo({
-        url: "/pages/about/about"
-      })
+      uni.navigateTo({ url: "/pages/about/about" })
     }
   }
 }
@@ -99,6 +118,29 @@ export default {
   background-color: #f5f5f5;
   min-height: 100vh;
 }
+.btn-hover { opacity: 0.8; }
+
+/* 未登录提示 */
+.login-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ff974a, #ff6b35);
+  border-radius: 16rpx;
+  padding: 40rpx;
+  margin-bottom: 20rpx;
+}
+.login-text {
+  font-size: 34rpx;
+  color: #fff;
+  font-weight: bold;
+}
+.arrow {
+  font-size: 32rpx;
+  color: #fff;
+  margin-left: 15rpx;
+}
+
 .user-card {
   display: flex;
   align-items: center;
@@ -114,18 +156,26 @@ export default {
   background-color: #eee;
 }
 .user-info {
+  flex: 1;
   margin-left: 30rpx;
 }
 .nickname {
   font-size: 34rpx;
   font-weight: bold;
   color: #333;
-  display: block;
-  margin-bottom: 10rpx;
 }
 .desc {
+  display: block;
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 8rpx;
+}
+.logout-btn {
   font-size: 26rpx;
   color: #999;
+  padding: 10rpx 20rpx;
+  border: 1rpx solid #ddd;
+  border-radius: 8rpx;
 }
 .menu-card {
   background: #fff;
@@ -137,18 +187,11 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 30rpx;
-  border-bottom: 1rpx solid #f0f0f0;
-}
-.menu-item:last-child {
-  border-bottom: none;
+  border-bottom: 1rpx solid #f5f5f5;
 }
 .menu-text {
-  font-size: 28rpx;
+  font-size: 30rpx;
   color: #333;
-}
-.arrow {
-  font-size: 28rpx;
-  color: #999;
 }
 .record-card {
   background: #fff;
@@ -157,34 +200,31 @@ export default {
   margin-top: 20rpx;
 }
 .record-title {
-  font-size: 30rpx;
+  font-size: 28rpx;
   font-weight: bold;
   color: #333;
   margin-bottom: 20rpx;
-  padding-bottom: 10rpx;
-  border-bottom: 1rpx solid #eee;
 }
 .record-item {
   display: flex;
   justify-content: space-between;
-  padding: 20rpx 0;
-  border-bottom: 1rpx dashed #f0f0f0;
+  align-items: center;
+  padding: 15rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
 }
-.record-item:last-child {
-  border-bottom: none;
-}
+.record-left { flex: 1; }
 .cat-name {
   font-size: 28rpx;
   color: #333;
   display: block;
-  margin-bottom: 8rpx;
 }
 .feed-time {
   font-size: 24rpx;
   color: #999;
+  margin-top: 5rpx;
 }
 .feed-loc {
-  font-size: 26rpx;
+  font-size: 24rpx;
   color: #666;
 }
 .empty-tip {

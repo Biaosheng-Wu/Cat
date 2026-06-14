@@ -67,3 +67,52 @@ CREATE TABLE IF NOT EXISTS t_feed_record (
     location_name   VARCHAR(500)    DEFAULT NULL                    COMMENT '投喂地点名称',
     feed_time       DATETIME        DEFAULT NULL                    COMMENT '投喂时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='投喂打卡记录表';
+
+-- =============================================
+-- RBAC 权限体系：用户表
+-- =============================================
+CREATE TABLE IF NOT EXISTS t_user (
+    id              BIGINT          AUTO_INCREMENT  PRIMARY KEY     COMMENT '用户ID',
+    username        VARCHAR(50)     NOT NULL UNIQUE                 COMMENT '用户名',
+    password        VARCHAR(200)    NOT NULL                        COMMENT '密码(BCrypt加密)',
+    nickname        VARCHAR(50)     DEFAULT NULL                    COMMENT '昵称',
+    phone           VARCHAR(20)     DEFAULT NULL                    COMMENT '手机号',
+    avatar_url      VARCHAR(500)    DEFAULT NULL                    COMMENT '头像URL',
+    enabled         TINYINT(1)      DEFAULT 1                       COMMENT '是否启用: 0-禁用 1-启用',
+    create_time     DATETIME        DEFAULT NULL                    COMMENT '注册时间',
+    update_time     DATETIME        DEFAULT NULL                    COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
+
+-- =============================================
+-- RBAC 权限体系：角色表
+-- =============================================
+CREATE TABLE IF NOT EXISTS t_role (
+    id              BIGINT          AUTO_INCREMENT  PRIMARY KEY     COMMENT '角色ID',
+    role_code       VARCHAR(50)     NOT NULL UNIQUE                 COMMENT '角色编码: ROLE_ADMIN / ROLE_VOLUNTEER',
+    role_name       VARCHAR(50)     NOT NULL                        COMMENT '角色名称: 管理员 / 志愿者',
+    description     VARCHAR(200)    DEFAULT NULL                    COMMENT '角色描述'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色表';
+
+-- =============================================
+-- RBAC 权限体系：用户-角色关联表
+-- =============================================
+CREATE TABLE IF NOT EXISTS t_user_role (
+    id              BIGINT          AUTO_INCREMENT  PRIMARY KEY     COMMENT '关联ID',
+    user_id         BIGINT          NOT NULL                        COMMENT '用户ID',
+    role_id         BIGINT          NOT NULL                        COMMENT '角色ID',
+    UNIQUE KEY uk_user_role (user_id, role_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户角色关联表';
+
+-- =============================================
+-- 初始化角色数据
+-- =============================================
+INSERT INTO t_role (role_code, role_name, description) VALUES
+('ROLE_ADMIN',     '管理员', '拥有全部权限，包括删除和管理'),
+('ROLE_VOLUNTEER', '志愿者', '普通用户，可投喂、上报、查看猫咪')
+ON DUPLICATE KEY UPDATE role_name = VALUES(role_name);
+
+-- =============================================
+-- 初始化测试账号（由 Spring DataInitializer 创建）
+-- 账号: admin / 密码: 123456  角色: 管理员
+-- 账号: volun / 密码: 123456  角色: 志愿者
+-- =============================================

@@ -1,5 +1,7 @@
 package org.example.catcarebusiness.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.example.catcarebusiness.config.JwtUtils;
 import org.example.catcarebusiness.entity.Cat;
 import org.example.catcarebusiness.service.CatService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,45 +10,45 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/cat") // 接口的统一前缀路径
+@RequestMapping("/api/cat")
 public class CatController {
 
     @Autowired
     private CatService catService;
 
-    /**
-     * 1. 录入猫咪档案
-     * 前端通过 POST 请求提交猫咪的 JSON 数据
-     */
+    @Autowired
+    private JwtUtils jwtUtils;
+
+    /** 从请求头提取当前登录用户ID */
+    private Long getCurrentUserId(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            return jwtUtils.getUserIdFromToken(header.substring(7));
+        }
+        return null;
+    }
+
+    /** 录入猫咪档案 */
     @PostMapping("/add")
-    public String addCat(@RequestBody Cat cat) {
-        cat.setCreatorId(1L);
+    public String addCat(@RequestBody Cat cat, HttpServletRequest request) {
+        cat.setCreatorId(getCurrentUserId(request));
         boolean saved = catService.save(cat);
         return saved ? "流浪猫档案录入成功！" : "录入失败，请检查数据。";
     }
 
-    /**
-     * 2. 获取猫咪列表
-     * 前端 catList / feed / report 页面获取所有猫咪
-     */
+    /** 获取猫咪列表 */
     @GetMapping("/list")
     public List<Cat> getCatList() {
         return catService.list();
     }
 
-    /**
-     * 3. 获取单只猫咪详情
-     * 前端 catDetail 页面按 ID 查询一只猫咪
-     */
+    /** 获取单只猫咪详情 */
     @GetMapping("/{id}")
     public Cat getCatById(@PathVariable Long id) {
         return catService.getById(id);
     }
 
-    /**
-     * 4. 修改猫咪绝育/TNR状态
-     * 前端传入猫咪 id 和新的状态值 (0-未绝育, 1-已绝育, 2-已剪耳标)
-     */
+    /** 修改猫咪绝育/TNR状态（仅管理员） */
     @PutMapping("/tnr/{id}")
     public String updateTnrStatus(@PathVariable Long id, @RequestParam Integer tnrStatus) {
         Cat cat = catService.getById(id);
@@ -58,10 +60,7 @@ public class CatController {
         return updated ? "猫咪绝育状态修改成功！" : "修改失败。";
     }
 
-    /**
-     * 5. 删除垃圾/错误数据
-     * 根据主键 ID 彻底从数据库删除
-     */
+    /** 删除猫咪档案（仅管理员） */
     @DeleteMapping("/delete/{id}")
     public String deleteCat(@PathVariable Long id) {
         boolean removed = catService.removeById(id);
