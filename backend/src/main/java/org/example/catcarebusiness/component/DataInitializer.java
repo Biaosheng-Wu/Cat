@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -79,6 +80,17 @@ public class DataInitializer implements CommandLineRunner {
                 new LambdaQueryWrapper<UserRole>().eq(UserRole::getRoleCode, roleCode));
             if (role != null) {
                 userRoleMapper.insertUserRole(user.getId(), role.getId());
+            }
+        } else {
+            // 用户已存在，确保角色已分配
+            List<String> roles = userMapper.selectRoleCodesByUserId(exist.getId());
+            if (roles == null || !roles.contains(roleCode)) {
+                UserRole role = userRoleMapper.selectOne(
+                    new LambdaQueryWrapper<UserRole>().eq(UserRole::getRoleCode, roleCode));
+                if (role != null) {
+                    userRoleMapper.insertUserRole(exist.getId(), role.getId());
+                    log.info("补充分配角色: {} -> {}", username, roleCode);
+                }
             }
         }
     }

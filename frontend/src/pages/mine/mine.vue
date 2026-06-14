@@ -10,8 +10,11 @@
     <view class="user-card" v-if="token">
       <image class="avatar" src="/static/avatar.png" mode="aspectFill"></image>
       <view class="user-info">
-        <text class="nickname">{{ userInfo.nickname || userInfo.username || '校园用户' }}</text>
-        <text class="desc">流浪猫救助志愿者</text>
+        <view class="nickname-row">
+          <text class="nickname">{{ userInfo.nickname || userInfo.username || '校园用户' }}</text>
+          <text class="admin-badge" v-if="isAdmin">管理员</text>
+        </view>
+        <text class="desc">{{ isAdmin ? '系统管理员' : '流浪猫救助志愿者' }}</text>
       </view>
       <view class="logout-btn" @click="doLogout" hover-class="btn-hover">退出</view>
     </view>
@@ -58,6 +61,7 @@ export default {
     return {
       token: '',
       userInfo: {},
+      isAdmin: false,
       showRecord: false,
       myFeedList: []
     }
@@ -66,6 +70,7 @@ export default {
     this.token = uni.getStorageSync('token') || ''
     try {
       this.userInfo = JSON.parse(uni.getStorageSync('userInfo') || '{}')
+      this.isAdmin = this.userInfo.isAdmin === true
     } catch (e) {
       this.userInfo = {}
     }
@@ -159,10 +164,22 @@ export default {
   flex: 1;
   margin-left: 30rpx;
 }
+.nickname-row {
+  display: flex;
+  align-items: center;
+}
 .nickname {
   font-size: 34rpx;
   font-weight: bold;
   color: #333;
+}
+.admin-badge {
+  font-size: 22rpx;
+  color: #fff;
+  background-color: #c62828;
+  padding: 2rpx 12rpx;
+  border-radius: 8rpx;
+  margin-left: 15rpx;
 }
 .desc {
   display: block;

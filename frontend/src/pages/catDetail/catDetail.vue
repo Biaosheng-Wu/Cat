@@ -28,8 +28,8 @@
       </view>
     </view>
 
-    <!-- 3. 管理操作区：修改绝育状态 + 删除 -->
-    <view class="action-card">
+    <!-- 3. 管理操作区：修改绝育状态 + 删除（仅管理员可见） -->
+    <view class="action-card" v-if="isAdmin">
       <view class="action-title">管理操作</view>
       <view class="action-row">
         <text class="action-label">绝育状态：</text>
@@ -70,13 +70,14 @@
 </template>
 
 <script>
-import { getCatDetail, updateTnrStatus, deleteCat } from '@/api/index.js'
+import { getCatDetail, updateTnrStatus, deleteCat, getCurrentUser } from '@/api/index.js'
 
 export default {
   name: "CatDetail",
   data() {
     return {
       catInfo: {},
+      isAdmin: false,
       // TNR 选项
       tnrOptions: [
         { label: '未绝育', value: 0 },
@@ -147,8 +148,31 @@ export default {
     const catId = Number(options.catId)
     console.log("当前猫咪ID：", catId)
     this.fetchCatDetail(catId)
+    this.checkAdminStatus()
   },
   methods: {
+    /** 检查当前用户是否为管理员 */
+    checkAdminStatus() {
+      // 先从本地缓存读取
+      try {
+        const userInfo = JSON.parse(uni.getStorageSync('userInfo') || '{}')
+        if (userInfo.isAdmin) {
+          this.isAdmin = true
+          return
+        }
+      } catch (e) {}
+
+      // 缓存无则调用接口
+      getCurrentUser().then(result => {
+        if (result.code === 200 && result.data && result.data.isAdmin) {
+          this.isAdmin = true
+          // 同步更新缓存
+          const cached = JSON.parse(uni.getStorageSync('userInfo') || '{}')
+          cached.isAdmin = true
+          uni.setStorageSync('userInfo', JSON.stringify(cached))
+        }
+      }).catch(() => {})
+    },
     /** 从后端获取猫咪详情，失败则使用 mock 数据 */
     async fetchCatDetail(catId) {
       try {

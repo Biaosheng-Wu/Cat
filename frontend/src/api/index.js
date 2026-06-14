@@ -81,6 +81,11 @@ export function getCaptcha() {
   return request('/api/auth/captcha', 'GET')
 }
 
+/** 获取当前登录用户信息（含 isAdmin 角色标识） */
+export function getCurrentUser() {
+  return request('/api/auth/me', 'GET')
+}
+
 /** 登录 */
 export function login(username, password) {
   return request('/api/auth/login', 'POST', { username, password })
@@ -145,7 +150,7 @@ export function getMyFeedList() {
 }
 
 export default {
-  getCaptcha, login, register, addCat, updateTnrStatus, deleteCat,
+  getCaptcha, getCurrentUser, login, register, addCat, updateTnrStatus, deleteCat,
   submitHealthReport, uploadFile, getCatList, getCatDetail,
   submitFeed, getTodayFeedCount, getMyFeedList
 }

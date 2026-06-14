@@ -15,6 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,6 +51,40 @@ public class AuthController {
         return captchaService.generate();
     }
 
+    /** 获取当前登录用户信息（含角色） */
+    @GetMapping("/me")
+    public Map<String, Object> getCurrentUser(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header == null || !header.startsWith("Bearer ")) {
+            throw new CaptchaException("未登录");
+        }
+        String token = header.substring(7);
+        if (!jwtUtils.validateToken(token)) {
+            throw new CaptchaException("Token无效");
+        }
+
+        String username = jwtUtils.getUsernameFromToken(token);
+        Long userId = jwtUtils.getUserIdFromToken(token);
+        User user = userService.getByUsername(username);
+
+        if (user == null) {
+            throw new CaptchaException("用户不存在");
+        }
+
+        boolean isAdmin = userMapper.selectRoleCodesByUserId(userId)
+                .contains("ROLE_ADMIN");
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("code", 200);
+        result.put("data", Map.of(
+            "username", user.getUsername(),
+            "nickname", user.getNickname() != null ? user.getNickname() : user.getUsername(),
+            "phone", user.getPhone() != null ? user.getPhone() : "",
+            "isAdmin", isAdmin
+        ));
+        return result;
+    }
+
     /** 登录 */
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody Map<String, String> loginData) {
@@ -67,6 +102,8 @@ public class AuthController {
 
         User user = userService.getByUsername(username);
         String token = jwtUtils.generateToken(username, user.getId());
+        boolean isAdmin = userMapper.selectRoleCodesByUserId(user.getId())
+                .contains("ROLE_ADMIN");
 
         Map<String, Object> result = new HashMap<>();
         result.put("code", 200);
@@ -75,7 +112,8 @@ public class AuthController {
             "token", token,
             "username", user.getUsername(),
             "nickname", user.getNickname() != null ? user.getNickname() : user.getUsername(),
-            "phone", user.getPhone() != null ? user.getPhone() : ""
+            "phone", user.getPhone() != null ? user.getPhone() : "",
+            "isAdmin", isAdmin
         ));
         return result;
     }
@@ -140,7 +178,8 @@ public class AuthController {
             "token", token,
             "username", user.getUsername(),
             "nickname", user.getNickname(),
-            "phone", ""
+            "phone", "",
+            "isAdmin", false
         ));
         return result;
     }
