@@ -34,6 +34,11 @@
 
     <!-- 加载中提示 -->
     <view class="loading-tip" v-if="loading">加载中...</view>
+
+    <!-- 底部"录入猫咪"悬浮按钮 -->
+    <view class="float-btn" @click="goAdd" hover-class="btn-hover">
+      + 录入猫咪
+    </view>
   </view>
 </template>
 
@@ -111,6 +116,12 @@ export default {
     goFeed() {
       uni.navigateTo({
         url: "/pages/feed/feed"
+      })
+    },
+    // 跳转到录入猫咪页
+    goAdd() {
+      uni.navigateTo({
+        url: "/pages/catAdd/catAdd"
       })
     }
   }
@@ -209,5 +220,17 @@ export default {
   padding: 40rpx;
   color: #999;
   font-size: 28rpx;
+}
+.float-btn {
+  position: fixed;
+  right: 30rpx;
+  bottom: 80rpx;
+  background-color: #ff974a;
+  color: #fff;
+  font-size: 28rpx;
+  padding: 18rpx 36rpx;
+  border-radius: 40rpx;
+  box-shadow: 0 4rpx 16rpx rgba(255, 151, 74, 0.35);
+  z-index: 100;
 }
 </style>

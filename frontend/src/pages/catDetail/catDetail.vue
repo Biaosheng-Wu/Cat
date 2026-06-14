@@ -28,7 +28,24 @@
       </view>
     </view>
 
-    <!-- 3. 历史投喂记录 -->
+    <!-- 3. 管理操作区：修改绝育状态 + 删除 -->
+    <view class="action-card">
+      <view class="action-title">管理操作</view>
+      <view class="action-row">
+        <text class="action-label">绝育状态：</text>
+        <picker :range="tnrOptions" range-key="label" @change="onTnrChange" class="picker-small">
+          <view class="picker-text">{{ currentTnrLabel }}</view>
+        </picker>
+        <view class="action-btn-small" @click="doUpdateTnr" hover-class="btn-hover">修改</view>
+      </view>
+      <view class="action-row danger-row">
+        <view class="action-btn-danger" @click="confirmDelete" hover-class="btn-hover">
+          删除此猫咪档案
+        </view>
+      </view>
+    </view>
+
+    <!-- 4. 历史投喂记录 -->
     <view class="record-card">
       <view class="record-title">📋 历史投喂记录</view>
       <view class="record-list">
@@ -53,13 +70,20 @@
 </template>
 
 <script>
-import { getCatDetail } from '@/api/index.js'
+import { getCatDetail, updateTnrStatus, deleteCat } from '@/api/index.js'
 
 export default {
   name: "CatDetail",
   data() {
     return {
       catInfo: {},
+      // TNR 选项
+      tnrOptions: [
+        { label: '未绝育', value: 0 },
+        { label: '已绝育', value: 1 },
+        { label: '已剪耳标', value: 2 }
+      ],
+      selectedTnr: 0,
       // mock 兜底数据（后端接口未就绪时使用）
       mockCatData: [
         {
@@ -113,6 +137,12 @@ export default {
       ]
     }
   },
+  computed: {
+    currentTnrLabel() {
+      const opt = this.tnrOptions.find(o => o.value === this.selectedTnr)
+      return opt ? opt.label : '未绝育'
+    }
+  },
   onLoad(options) {
     const catId = Number(options.catId)
     console.log("当前猫咪ID：", catId)
@@ -125,6 +155,7 @@ export default {
         const result = await getCatDetail(catId)
         if (result && result.id) {
           this.catInfo = result
+          this.selectedTnr = result.tnrStatus || 0
           return
         }
       } catch (e) {
@@ -136,6 +167,49 @@ export default {
     goFeed() {
       uni.navigateTo({
         url: "/pages/feed/feed"
+      })
+    },
+
+    // TNR 下拉选择
+    onTnrChange(e) {
+      this.selectedTnr = this.tnrOptions[e.detail.value].value
+    },
+
+    // 提交修改绝育状态
+    async doUpdateTnr() {
+      uni.showLoading({ title: '更新中...' })
+      try {
+        const result = await updateTnrStatus(this.catInfo.id, this.selectedTnr)
+        uni.hideLoading()
+        uni.showToast({ title: result || '修改成功', icon: 'success' })
+        // 刷新本地显示
+        this.catInfo.isSterilized = this.selectedTnr > 0
+      } catch (e) {
+        uni.hideLoading()
+        uni.showToast({ title: '修改失败', icon: 'none' })
+      }
+    },
+
+    // 确认删除
+    confirmDelete() {
+      uni.showModal({
+        title: '确认删除',
+        content: `确定要删除"${this.catInfo.name}"的档案吗？此操作不可恢复。`,
+        confirmColor: '#c62828',
+        success: async (res) => {
+          if (res.confirm) {
+            uni.showLoading({ title: '删除中...' })
+            try {
+              const result = await deleteCat(this.catInfo.id)
+              uni.hideLoading()
+              uni.showToast({ title: result || '已删除', icon: 'success' })
+              setTimeout(() => { uni.navigateBack() }, 1200)
+            } catch (e) {
+              uni.hideLoading()
+              uni.showToast({ title: '删除失败', icon: 'none' })
+            }
+          }
+        }
       })
     }
   }
@@ -197,6 +271,57 @@ export default {
 .content {
   flex: 1;
   color: #333;
+}
+
+/* 管理操作卡片 */
+.action-card {
+  margin: 0 20rpx 20rpx;
+  padding: 30rpx;
+  background: #fff;
+  border-radius: 16rpx;
+}
+.action-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  padding-bottom: 10rpx;
+  border-bottom: 1rpx solid #f0e6dc;
+}
+.action-row {
+  display: flex;
+  align-items: center;
+  margin-top: 20rpx;
+}
+.action-label {
+  font-size: 28rpx;
+  color: #666;
+  width: 140rpx;
+}
+.picker-small {
+  flex: 1;
+}
+.action-btn-small {
+  font-size: 28rpx;
+  color: #fff;
+  background-color: #ff974a;
+  padding: 12rpx 28rpx;
+  border-radius: 8rpx;
+  margin-left: 20rpx;
+  flex-shrink: 0;
+}
+.action-btn-danger {
+  width: 100%;
+  text-align: center;
+  font-size: 28rpx;
+  color: #c62828;
+  background-color: #ffebee;
+  padding: 20rpx;
+  border-radius: 8rpx;
+  border: 1rpx solid #ef9a9a;
+}
+.danger-row {
+  margin-top: 30rpx;
 }
 .record-card {
   margin: 0 20rpx;

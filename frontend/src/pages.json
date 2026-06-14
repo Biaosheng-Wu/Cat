@@ -2,39 +2,35 @@
 	"pages": [
 		{
 			"path": "pages/index/index",
-			"style": {
-				"navigationBarTitleText": "校园流浪猫投喂小程序"
-			}
-		},
-		{
-			"path": "pages/catDetail/catDetail",
-			"style": {
-				"navigationBarTitleText": "猫咪详情"
-			}
-		},
-		{
-			"path": "pages/feed/feed",
-			"style": {
-				"navigationBarTitleText": "投喂打卡"
-			}
-		},
-		{
-			"path": "pages/mine/mine",
-			"style": {
-				"navigationBarTitleText": "个人中心"
-			}
+			"style": { "navigationBarTitleText": "校园流浪猫投喂小程序" }
 		},
 		{
 			"path": "pages/catList/catList",
-			"style": {
-				"navigationBarTitleText": "猫咪图鉴"
-			}
+			"style": { "navigationBarTitleText": "猫咪图鉴" }
+		},
+		{
+			"path": "pages/catDetail/catDetail",
+			"style": { "navigationBarTitleText": "猫咪详情" }
+		},
+		{
+			"path": "pages/catAdd/catAdd",
+			"style": { "navigationBarTitleText": "录入猫咪档案" }
+		},
+		{
+			"path": "pages/feed/feed",
+			"style": { "navigationBarTitleText": "投喂打卡" }
+		},
+		{
+			"path": "pages/report/report",
+			"style": { "navigationBarTitleText": "健康异常上报" }
+		},
+		{
+			"path": "pages/mine/mine",
+			"style": { "navigationBarTitleText": "个人中心" }
 		},
 		{
 			"path": "pages/about/about",
-			"style": {
-				"navigationBarTitleText": "关于我们"
-			}
+			"style": { "navigationBarTitleText": "关于我们" }
 		}
 	],
 	"window": {
@@ -50,14 +46,8 @@
 		"backgroundColor": "#ffffff",
 		"fontSize": "24px",
 		"list": [
-			{
-				"pagePath": "pages/index/index",
-				"text": "首页"
-			},
-			{
-				"pagePath": "pages/mine/mine",
-				"text": "个人中心"
-			}
+			{ "pagePath": "pages/index/index", "text": "首页" },
+			{ "pagePath": "pages/mine/mine", "text": "个人中心" }
 		]
 	},
 	"animation": {
