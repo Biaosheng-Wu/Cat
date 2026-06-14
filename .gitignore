@@ -1,4 +1,26 @@
 HELP.md
+
+### 敏感配置文件 - 防止密钥泄露 ###
+application.properties
+application-*.properties
+!application-example.properties
+!application-template.properties
+*.env
+.env
+.env.*
+*.secret
+*.secret.*
+credentials.json
+secrets.json
+
+### 密钥文件 ###
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+
+### Maven ###
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
@@ -32,22 +54,28 @@ build/
 ### VS Code ###
 .vscode/
 
-# Logs
-logs
-*.log
+### Node.js / 前端 ###
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+.pnpm-store/
 
-node_modules
-.DS_Store
-dist
+### 构建输出 ###
+dist/
 *.local
 
-# Editor directories and files
-.idea
+### 系统文件 ###
+.DS_Store
+Thumbs.db
+
+### 日志 ###
+logs/
+*.log
+
+### 编辑器文件 ###
 *.suo
 *.ntvs*
 *.njsproj
