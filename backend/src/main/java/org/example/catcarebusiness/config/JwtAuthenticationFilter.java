@@ -42,14 +42,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             new UsernamePasswordAuthenticationToken(
                                     userDetails, null, userDetails.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                } else {
+                    // Token 解析失败（签名错误、格式错误等）
+                    response.setStatus(401);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"code\":401,\"message\":\"Token无效，请重新登录\"}");
+                    return;
                 }
             } catch (ExpiredJwtException e) {
                 response.setStatus(401);
-                response.getWriter().write("{\"error\":\"Token已过期，请重新登录\"}");
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":401,\"message\":\"Token已过期，请重新登录\"}");
                 return;
             } catch (Exception e) {
                 response.setStatus(401);
-                response.getWriter().write("{\"error\":\"Token无效\"}");
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":401,\"message\":\"Token无效\"}");
                 return;
             }
         }

@@ -30,8 +30,8 @@ function request(url, method = 'GET', data = null) {
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data)
-        } else if (res.statusCode === 401) {
-          // Token 过期或无效，清除登录状态
+        } else if (res.statusCode === 401 || res.statusCode === 403) {
+          // Token 过期/无效 或 无权限 — 清除登录状态跳回登录页
           uni.removeStorageSync('token')
           uni.removeStorageSync('userInfo')
           uni.reLaunch({ url: '/pages/login/login' })

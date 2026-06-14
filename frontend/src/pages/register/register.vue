@@ -118,7 +118,7 @@ export default {
     },
 
     goLogin() {
-      uni.navigateBack()
+      uni.redirectTo({ url: '/pages/login/login' })
     }
   }
 }
