@@ -160,7 +160,7 @@ export default {
       const mapEl = document.getElementById('leaflet-map')
       if (!mapEl || this.leafletMap) return
 
-      // 初始化 Leaflet 地图
+      // 初始化 Leaflet 地图（先用默认坐标）
       const map = window.L.map(mapEl, {
         center: [this.location.latitude, this.location.longitude],
         zoom: 15,
@@ -182,6 +182,39 @@ export default {
       setTimeout(() => { map.invalidateSize() }, 200)
 
       this.leafletMap = map
+
+      // 尝试获取用户实时位置并定位
+      this.tryGeolocate(map)
+    },
+
+    /** 通过浏览器定位 API 获取用户实时位置并飞行到该位置 */
+    tryGeolocate(map) {
+      if (!navigator.geolocation) {
+        console.log('浏览器不支持定位')
+        return
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords
+          // 更新为真实坐标
+          this.location.latitude = latitude
+          this.location.longitude = longitude
+          // 地图飞行到用户位置
+          map.setView([latitude, longitude], 15)
+          // 在用户位置添加蓝色圆圈标记
+          window.L.circleMarker([latitude, longitude], {
+            radius: 8,
+            fillColor: '#3388ff',
+            color: '#fff',
+            weight: 2,
+            fillOpacity: 0.8
+          }).addTo(map).bindPopup('你的位置').openPopup()
+        },
+        (err) => {
+          console.log('定位失败: ' + err.message)
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      )
     },
 
     setMapMarker(map, lat, lng) {
