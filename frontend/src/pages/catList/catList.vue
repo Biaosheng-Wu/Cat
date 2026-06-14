@@ -31,16 +31,23 @@
         <view class="feed-btn" @click.stop="goFeed" hover-class="btn-hover">去投喂</view>
       </view>
     </view>
+
+    <!-- 加载中提示 -->
+    <view class="loading-tip" v-if="loading">加载中...</view>
   </view>
 </template>
 
 <script>
+import { getCatList } from '@/api/index.js'
+
 export default {
-  name: "Index",
+  name: "CatList",
   data() {
     return {
-      // 模拟后端返回的 JSON 数据（后续对接真实接口直接替换这里即可）
-      catList: [
+      catList: [],
+      loading: false,
+      // mock 兜底数据（后端接口未就绪时使用）
+      mockCatList: [
         {
           id: 1,
           name: "橘猫大胖",
@@ -72,14 +79,35 @@ export default {
       ]
     }
   },
+  onLoad() {
+    this.fetchCatList()
+  },
   methods: {
-    // 跳转到 猫咪详情页
+    /** 从后端获取猫咪列表，失败则使用 mock 数据 */
+    async fetchCatList() {
+      this.loading = true
+      try {
+        const result = await getCatList()
+        // 后端返回的可能是数组，也可能是 { data: [...] }
+        const list = Array.isArray(result) ? result : (result.data || [])
+        if (list.length > 0) {
+          this.catList = list
+          this.loading = false
+          return
+        }
+      } catch (e) {
+        console.log('后端未响应，使用兜底数据', e)
+      }
+      this.catList = this.mockCatList
+      this.loading = false
+    },
+    // 跳转到猫咪详情页
     goDetail(catId) {
       uni.navigateTo({
         url: `/pages/catDetail/catDetail?catId=${catId}`
       })
     },
-    // 跳转到 投喂打卡页
+    // 跳转到投喂打卡页
     goFeed() {
       uni.navigateTo({
         url: "/pages/feed/feed"
@@ -157,12 +185,10 @@ export default {
   padding: 4rpx 12rpx;
   border-radius: 20rpx;
 }
-/* 已绝育 - 绿色标签 */
 .tag-ok {
   background-color: #e8f5e9;
   color: #2e7d32;
 }
-/* 未绝育 - 红色标签 */
 .tag-no {
   background-color: #ffebee;
   color: #c62828;
@@ -176,5 +202,12 @@ export default {
   background-color: #ff974a;
   padding: 12rpx 24rpx;
   border-radius: 8rpx;
+}
+
+.loading-tip {
+  text-align: center;
+  padding: 40rpx;
+  color: #999;
+  font-size: 28rpx;
 }
 </style>
